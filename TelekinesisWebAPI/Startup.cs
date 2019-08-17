@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Makaretu.Dns;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -43,6 +45,25 @@ namespace TelekinesisWebAPI
 
 //            app.UseHttpsRedirection();
             app.UseMvc();
+            AdvertiseService(app);
+        }
+
+        private void AdvertiseService(IApplicationBuilder app)
+        {
+            var mdns = new MulticastService();
+            mdns.Start();
+            
+            var serverAddressesFeature = app.ServerFeatures.Get<IServerAddressesFeature>();
+            foreach (var address in serverAddressesFeature.Addresses)
+            {
+                var uri = new Uri(address);
+                var serviceDiscovery = new ServiceDiscovery(mdns);
+                string serviceType = "_telekinesis._" + uri.Scheme + "._tcp";
+                var service = new ServiceProfile(Environment.MachineName, serviceType, (ushort) uri.Port);
+                service.AddProperty("OSVersion", Environment.OSVersion.ToString());
+                service.AddProperty("Platform", Environment.OSVersion.Platform.ToString());
+                serviceDiscovery.Advertise(service);
+            }
         }
     }
 }
