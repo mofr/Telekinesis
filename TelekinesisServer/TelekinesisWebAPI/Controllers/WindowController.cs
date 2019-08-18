@@ -21,9 +21,11 @@ namespace TelekinesisWebAPI.Controllers
             {
                 if (!String.IsNullOrEmpty(process.MainWindowTitle))
                 {
-                    var dto = new WindowDTO();
-                    dto.ProcessName = process.ProcessName;
-                    dto.Title = process.MainWindowTitle;
+                    var dto = new WindowDTO
+                    {
+                        ProcessName = process.ProcessName,
+                        Title = process.MainWindowTitle,
+                    };
                     windows.Add(dto);
                 }
             }
