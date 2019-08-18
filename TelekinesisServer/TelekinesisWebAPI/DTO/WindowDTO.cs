@@ -5,6 +5,9 @@ namespace TelekinesisWebAPI.DTO
     public class WindowDTO
     {
         [Required]
+        public int Id;
+        
+        [Required]
         public string ProcessName;
         
         [Required]

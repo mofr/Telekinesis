@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using OS;
 using TelekinesisWebAPI.DTO;
 
 namespace TelekinesisWebAPI.Controllers
@@ -23,6 +22,7 @@ namespace TelekinesisWebAPI.Controllers
                 {
                     var dto = new WindowDTO
                     {
+                        Id = process.Id,
                         ProcessName = process.ProcessName,
                         Title = process.MainWindowTitle,
                     };
@@ -32,25 +32,14 @@ namespace TelekinesisWebAPI.Controllers
             return windows;
         }
 
-        [HttpGet("{id}")]
-        public ActionResult<string> Get(int id)
+        [HttpGet("{id}/activate")]
+        public void ActivateWindow(int id)
         {
-            return "value";
-        }
-
-        [HttpPost]
-        public void Post([FromBody] string value)
-        {
-        }
-
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
-        {
-        }
-
-        [HttpDelete("{id}")]
-        public void Delete(int id)
-        {
+            var process = Process.GetProcessById(id);
+            if (!Windows.SetForegroundWindow(process.MainWindowHandle))
+                Console.WriteLine("SetForegroundWindows failed on process " + process.ProcessName);
+            if (!Windows.OpenIcon(process.MainWindowHandle))
+                Console.WriteLine("OpenIcon failed on process " + process.ProcessName);
         }
     }
 }
