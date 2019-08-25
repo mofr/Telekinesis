@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace OS
 {
@@ -16,7 +17,127 @@ namespace OS
         
         [DllImport("user32.dll")]
         public static extern bool OpenIcon(IntPtr hWnd);
-            
+        
+        [DllImport("kernel32.dll")]
+        static extern uint GetCurrentThreadId();
+        
+        [DllImport("user32.dll", SetLastError=true)]
+        static extern uint GetWindowThreadProcessId(IntPtr hWnd, IntPtr ProcessId);
+        
+        [DllImport("user32.dll")]
+        static extern bool AttachThreadInput(uint idAttach, uint idAttachTo, bool fAttach);
+        
+        [DllImport("user32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool SystemParametersInfo(SPI uiAction, uint uiParam, ref uint pvParam, SPIF fWinIni); // T = any type
+
+        [DllImport("user32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool SystemParametersInfo(SPI uiAction, uint uiParam, IntPtr pvParam, SPIF fWinIni);
+
+        // For setting a string parameter
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool SystemParametersInfo(uint uiAction, uint uiParam, String pvParam, SPIF fWinIni);
+
+        // For reading a string parameter
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool SystemParametersInfo(uint uiAction, uint uiParam, StringBuilder pvParam, SPIF fWinIni);
+
+        [DllImport("user32.dll")]
+        static extern bool AllowSetForegroundWindow(int dwProcessId);
+        
+        [Flags]
+        public enum SPIF
+        {
+            None = 0x00,
+            /// <summary>Writes the new system-wide parameter setting to the user profile.</summary>
+            SPIF_UPDATEINIFILE = 0x01,
+            /// <summary>Broadcasts the WM_SETTINGCHANGE message after updating the user profile.</summary>
+            SPIF_SENDCHANGE = 0x02,
+            /// <summary>Same as SPIF_SENDCHANGE.</summary>
+            SPIF_SENDWININICHANGE = 0x02
+        }
+
+        public enum SPI : uint
+        {
+            /// <summary>
+            /// Retrieves the amount of time following user input, in milliseconds, during which the system will not allow applications 
+            /// to force themselves into the foreground. The pvParam parameter must point to a DWORD variable that receives the time.
+            /// Windows NT, Windows 95:  This value is not supported.
+            /// </summary>
+            SPI_GETFOREGROUNDLOCKTIMEOUT = 0x2000,
+
+            /// <summary>
+            /// Sets the amount of time following user input, in milliseconds, during which the system does not allow applications 
+            /// to force themselves into the foreground. Set pvParam to the new timeout value.
+            /// The calling thread must be able to change the foreground window, otherwise the call fails.
+            /// Windows NT, Windows 95:  This value is not supported.
+            /// </summary>
+            SPI_SETFOREGROUNDLOCKTIMEOUT = 0x2001,
+        }
+        
+        public enum ShowWindowEnum
+        {
+            Hide = 0,
+            ShowNormal = 1,
+            ShowMinimized = 2,
+            ShowMaximized = 3,
+            Maximize = 3,
+            ShowNormalNoActivate = 4,
+            Show = 5,
+            Minimize = 6,
+            ShowMinNoActivate = 7,
+            ShowNoActivate = 8,
+            Restore = 9,
+            ShowDefault = 10,
+            ForceMinimized = 11
+        };
+        
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool ShowWindow(IntPtr hWnd, ShowWindowEnum flags);
+        
+        [DllImport("user32.dll")]
+        static extern void SwitchToThisWindow(IntPtr hWnd, bool fUnknown);
+
+        public static void ActivateWindow(IntPtr hWnd)
+        {
+            //relation time of SetForegroundWindow lock
+            uint lockTimeOut = 0;
+            IntPtr hCurrWnd = GetForegroundWindow();
+            uint dwThisTID = GetCurrentThreadId();
+            uint dwCurrTID = GetWindowThreadProcessId(hCurrWnd,IntPtr.Zero);
+
+            //we need to bypass some limitations from Microsoft :)
+            if(dwThisTID != dwCurrTID)
+            {
+                AttachThreadInput(dwThisTID, dwCurrTID, true);
+
+                SystemParametersInfo(SPI.SPI_GETFOREGROUNDLOCKTIMEOUT, 0, ref lockTimeOut, SPIF.None);
+                SystemParametersInfo(SPI.SPI_SETFOREGROUNDLOCKTIMEOUT, 0, IntPtr.Zero, SPIF.SPIF_SENDWININICHANGE | SPIF.SPIF_UPDATEINIFILE);
+
+                AllowSetForegroundWindow(ASFW_ANY);
+            }
+
+            ShowWindow(hWnd, ShowWindowEnum.Minimize);
+            OpenIcon(hWnd);
+            SetForegroundWindow(hWnd);
+
+            if(dwThisTID != dwCurrTID)
+            {
+                SystemParametersInfo(SPI.SPI_SETFOREGROUNDLOCKTIMEOUT, 0, ref lockTimeOut, SPIF.SPIF_SENDWININICHANGE | SPIF.SPIF_UPDATEINIFILE);
+                AttachThreadInput(dwThisTID, dwCurrTID, false);
+            }
+        }
+
+        public static void AltTab()
+        {
+            Press(VirtualKeyShort.MENU);
+            Press(VirtualKeyShort.TAB);
+        }
+
         public static void SendInputWithAPI()
         {
             Press(ScanCodeShort.LSHIFT);
@@ -1058,7 +1179,14 @@ namespace OS
             internal short wParamL;
             internal short wParamH;
         }
-        
+
+        private const int ASFW_ANY = -1;
+        private const uint SPI_GETFOREGROUNDLOCKTIMEOUT = 0x2000;
+        private const uint SPI_SETFOREGROUNDLOCKTIMEOUT = 0x2001;
+
+        private const int SPIF_UPDATEINIFILE = 0x01;
+        private const int SPIF_SENDWININICHANGE = 0x02;
+
         private const int APPCOMMAND_VOLUME_MUTE = 0x80000;
         private const int APPCOMMAND_VOLUME_UP = 0xA0000;
         private const int APPCOMMAND_VOLUME_DOWN = 0x90000;

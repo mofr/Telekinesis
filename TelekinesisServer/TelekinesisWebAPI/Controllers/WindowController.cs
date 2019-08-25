@@ -36,10 +36,13 @@ namespace TelekinesisWebAPI.Controllers
         public void ActivateWindow(int id)
         {
             var process = Process.GetProcessById(id);
-            if (!Windows.SetForegroundWindow(process.MainWindowHandle))
-                Console.WriteLine("SetForegroundWindows failed on process " + process.ProcessName);
-            if (!Windows.OpenIcon(process.MainWindowHandle))
-                Console.WriteLine("OpenIcon failed on process " + process.ProcessName);
+            Windows.ActivateWindow(process.MainWindowHandle);
+        }
+        
+        [HttpGet("alttab")]
+        public void AltTab()
+        {
+            Windows.AltTab();
         }
     }
 }
