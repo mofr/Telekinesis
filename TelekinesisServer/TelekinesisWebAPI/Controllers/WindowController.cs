@@ -38,11 +38,5 @@ namespace TelekinesisWebAPI.Controllers
             var process = Process.GetProcessById(id);
             Windows.ActivateWindow(process.MainWindowHandle);
         }
-        
-        [HttpGet("alttab")]
-        public void AltTab()
-        {
-            Windows.AltTab();
-        }
     }
 }
