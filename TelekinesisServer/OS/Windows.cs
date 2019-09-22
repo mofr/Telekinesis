@@ -48,6 +48,80 @@ namespace OS
         [DllImport("user32.dll")]
         static extern bool AllowSetForegroundWindow(int dwProcessId);
         
+        [DllImport("user32.dll")]
+        static extern bool LockWorkStation();
+
+        [DllImport("advapi32.dll")]
+        static extern bool InitiateSystemShutdownA(IntPtr machineName, IntPtr message, uint timeout, bool forceAppsClosed, bool reboot);
+
+        [DllImport("advapi32.dll")]
+        static extern bool AbortSystemShutdownA(IntPtr machineName);
+        
+        [DllImport("kernel32.dll", SetLastError=true)]
+        static extern IntPtr LocalFree(IntPtr hMem);
+
+        [DllImport("kernel32.dll")]
+        static extern uint GetLastError();
+
+        [DllImport("kernel32.dll")]
+        static extern uint FormatMessage(uint flags, IntPtr source, uint messageId, int languageId, ref IntPtr buffer, uint size, IntPtr arguments);
+        
+        const uint FORMAT_MESSAGE_ALLOCATE_BUFFER = 0x00000100;
+        const uint FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200;
+        const uint FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000;
+        const uint FORMAT_MESSAGE_ARGUMENT_ARRAY = 0x00002000;
+        const uint FORMAT_MESSAGE_FROM_HMODULE = 0x00000800;
+        const uint FORMAT_MESSAGE_FROM_STRING = 0x00000400;
+
+        private const int LANG_ENGLISH = 0x09;
+        private const int SUBLANG_ENGLISH_US = 0x01;
+
+        static int MAKELANGID(int primary, int sub)
+        {
+            return (((ushort)sub) << 10) | ((ushort)primary);
+        }
+
+        static string GetLastErrorMessage()
+        {
+            int languageId = MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US);
+            uint lastError = GetLastError();
+            IntPtr buffer = IntPtr.Zero;
+            uint chars = FormatMessage(
+                FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                IntPtr.Zero,
+                lastError,
+                languageId,
+                ref buffer,
+                0,
+                IntPtr.Zero);
+            if (chars == 0)
+            {
+                return null;
+            }
+            string message = Marshal.PtrToStringAnsi(buffer);
+            LocalFree(buffer);
+            return message;
+        }
+
+        public static void LockScreen()
+        {
+            LockWorkStation();
+        }
+
+        public static void Shutdown(uint timeout = 30, bool reboot = false)
+        {
+            string arguments = reboot ? "-r" : "-s";
+            arguments += $" -t {timeout}";
+            string actionName = reboot ? "Reboot" : "Shutdown";
+            arguments += $" -c \"{actionName} is planned by Telekinesis in {timeout} seconds\"";
+            System.Diagnostics.Process.Start("shutdown.exe", arguments);
+        }
+
+        public static void AbortShutdown()
+        {
+            System.Diagnostics.Process.Start("shutdown.exe", "-a");
+        }
+
         [Flags]
         public enum SPIF
         {
