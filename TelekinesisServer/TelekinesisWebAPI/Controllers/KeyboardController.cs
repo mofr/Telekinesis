@@ -8,7 +8,15 @@ namespace TelekinesisWebAPI.Controllers
     public class KeyboardController : ControllerBase
     {
         [HttpGet("press")]
-        public void Press([FromQuery(Name="button")] KeyboardButton button)
+        public void Press([FromQuery(Name="button")] KeyboardButton[] buttons)
+        {
+            foreach (var button in buttons)
+            {
+                handleButton(button);
+            }
+        }
+        
+        private void handleButton(KeyboardButton button)
         {
             switch (button)
             {
