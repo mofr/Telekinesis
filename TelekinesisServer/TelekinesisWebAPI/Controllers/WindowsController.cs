@@ -9,7 +9,7 @@ namespace TelekinesisWebAPI.Controllers
 {
     [Route("api/windows")]
     [ApiController]
-    public class WindowController : ControllerBase
+    public class WindowsController : ControllerBase
     {
         [HttpGet]
         public ActionResult<IEnumerable<WindowDTO>> Get()
