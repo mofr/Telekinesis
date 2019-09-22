@@ -40,9 +40,8 @@ namespace TelekinesisWebAPI.Controllers
         }
         
         [HttpGet("alttab")]
-        public ActionResult AltTab()
+        public void AltTab()
         {
-            return Redirect("/swagger");
             Windows.AltTab();
         }
     }
