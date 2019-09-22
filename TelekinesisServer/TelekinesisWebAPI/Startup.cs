@@ -66,10 +66,11 @@ namespace TelekinesisWebAPI
             {
                 var uri = new Uri(address);
                 var serviceDiscovery = new ServiceDiscovery(mdns);
-                string serviceType = "_telekinesis._" + uri.Scheme + "._tcp";
-                var service = new ServiceProfile(Environment.MachineName, serviceType, (ushort) uri.Port);
+                string serviceType = "_" + uri.Scheme + "._tcp";
+                var service = new ServiceProfile("TelekinesisServer", serviceType, (ushort) uri.Port);
                 service.AddProperty("OSVersion", Environment.OSVersion.ToString());
                 service.AddProperty("Platform", Environment.OSVersion.Platform.ToString());
+                service.AddProperty("MachineName", Environment.MachineName);
                 serviceDiscovery.Advertise(service);
             }
         }
