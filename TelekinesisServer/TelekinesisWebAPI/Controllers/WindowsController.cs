@@ -49,7 +49,7 @@ namespace TelekinesisWebAPI.Controllers
             return windows;
         }
 
-        [HttpGet("{id}/activate")]
+        [HttpPost("{id}/activate")]
         public void ActivateWindow(int id)
         {
             var process = Process.GetProcessById(id);

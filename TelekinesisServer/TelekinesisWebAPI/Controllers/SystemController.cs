@@ -6,25 +6,25 @@ namespace TelekinesisWebAPI.Controllers
     [Route("api/system")]
     public class SystemController : ControllerBase
     {
-        [HttpGet("lock-screen")]
+        [HttpPost("lock-screen")]
         public void LockScreen()
         {
             Windows.LockScreen();
         }
         
-        [HttpGet("reboot")]
+        [HttpPost("reboot")]
         public void Reboot([FromQuery] uint timeout = 30)
         {
             Windows.Shutdown(timeout, true);
         }
         
-        [HttpGet("shutdown")]
+        [HttpPost("shutdown")]
         public void Shutdown([FromQuery] uint timeout = 30)
         {
             Windows.Shutdown(timeout);
         }
         
-        [HttpGet("abort-shutdown")]
+        [HttpPost("abort-shutdown")]
         public void AbortShutdown()
         {
             Windows.AbortShutdown();
