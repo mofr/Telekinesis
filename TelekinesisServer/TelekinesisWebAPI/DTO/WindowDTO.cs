@@ -12,5 +12,8 @@ namespace TelekinesisWebAPI.DTO
         
         [Required]
         public string Title;
+        
+        [Required]
+        public string IconLink;
     }
 }

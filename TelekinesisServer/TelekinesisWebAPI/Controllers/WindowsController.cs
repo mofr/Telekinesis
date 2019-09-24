@@ -1,8 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using OS;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats;
+using SixLabors.ImageSharp.Formats.Png;
 using TelekinesisWebAPI.DTO;
 
 namespace TelekinesisWebAPI.Controllers
@@ -11,8 +16,15 @@ namespace TelekinesisWebAPI.Controllers
     [ApiController]
     public class WindowsController : ControllerBase
     {
+        private IImageEncoder imageEncoder;
+        
+        public WindowsController()
+        {
+            imageEncoder = new PngEncoder();
+        }
+
         [HttpGet]
-        public ActionResult<IEnumerable<WindowDTO>> Get()
+        public ActionResult<IEnumerable<WindowDTO>> GetAllWindows()
         {
             Process[] processlist = Process.GetProcesses();
             var windows = new List<WindowDTO>();
@@ -20,11 +32,16 @@ namespace TelekinesisWebAPI.Controllers
             {
                 if (!String.IsNullOrEmpty(process.MainWindowTitle))
                 {
+                    string iconLink = Url.RouteUrl("get-window-icon", new 
+                    {
+                        id = process.Id,
+                    }, Request.Scheme);
                     var dto = new WindowDTO
                     {
                         Id = process.Id,
                         ProcessName = process.ProcessName,
                         Title = process.MainWindowTitle,
+                        IconLink = iconLink,
                     };
                     windows.Add(dto);
                 }
@@ -37,6 +54,19 @@ namespace TelekinesisWebAPI.Controllers
         {
             var process = Process.GetProcessById(id);
             Windows.ActivateWindow(process.MainWindowHandle);
+        }
+        
+        [HttpGet("{id}/icon", Name="get-window-icon")]
+        public async Task<IActionResult> GetWindowIcon(int id)
+        {
+            var process = Process.GetProcessById(id);
+            var stream = new MemoryStream();
+            using (Image icon = Windows.GetIcon(process))
+            {
+                icon.Save(stream, imageEncoder);
+            }
+            stream.Seek(0, SeekOrigin.Begin);
+            return File(stream, "image/png");
         }
     }
 }

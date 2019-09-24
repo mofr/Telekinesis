@@ -1,6 +1,12 @@
 using System;
+using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using System.Text;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+using Image = SixLabors.ImageSharp.Image;
 
 namespace OS
 {
@@ -44,6 +50,35 @@ namespace OS
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         static extern bool SystemParametersInfo(uint uiAction, uint uiParam, StringBuilder pvParam, SPIF fWinIni);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern IntPtr GetModuleHandleA(IntPtr moduleName);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern IntPtr GetDC(IntPtr hWnd);
+
+        [DllImport("shell32.dll", SetLastError = true)]
+        static extern IntPtr ExtractAssociatedIconA(IntPtr instance, string iconPath, ref int iconIndex);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern bool GetIconInfo(IntPtr icon, ref ICONINFO iconInfo);
+        
+        [DllImport("gdi32.dll")]
+        static extern int GetObject(IntPtr hgdiobj, int cbBuffer, IntPtr lpvObject);
+
+        [DllImport("gdi32.dll")]
+        static extern int GetObject(IntPtr hgdiobj, int cbBuffer, ref BITMAP bitmap);
+
+        [DllImport("gdi32.dll")]
+        static extern int GetDIBits(
+            IntPtr hdc,
+            IntPtr hbitmap,
+            int start,
+            int cLines,
+            ref byte[] lpvBits,
+            ref BITMAPINFO bitmapInfo,
+            DIBColorMode usage
+        );
 
         [DllImport("user32.dll")]
         static extern bool AllowSetForegroundWindow(int dwProcessId);
@@ -114,12 +149,12 @@ namespace OS
             arguments += $" -t {timeout}";
             string actionName = reboot ? "Reboot" : "Shutdown";
             arguments += $" -c \"{actionName} is planned by Telekinesis in {timeout} seconds\"";
-            System.Diagnostics.Process.Start("shutdown.exe", arguments);
+            Process.Start("shutdown.exe", arguments);
         }
 
         public static void AbortShutdown()
         {
-            System.Diagnostics.Process.Start("shutdown.exe", "-a");
+            Process.Start("shutdown.exe", "-a");
         }
 
         [Flags]
@@ -206,6 +241,35 @@ namespace OS
             }
         }
 
+        public static Image GetIcon(Process process)
+        {
+            var icon = Icon.ExtractAssociatedIcon(process.MainModule.FileName);
+            var bitmap = icon.ToBitmap();
+            var bitmapData = bitmap.LockBits(
+                new Rectangle(0, 0, bitmap.Width, bitmap.Height), 
+                ImageLockMode.ReadOnly, 
+                PixelFormat.Format32bppPArgb
+            );
+            int byteCount = Math.Abs(bitmapData.Stride) * bitmapData.Height;
+            byte[] rgbValues = new byte[byteCount];
+            Marshal.Copy(bitmapData.Scan0, rgbValues, 0, byteCount);
+            bitmap.UnlockBits(bitmapData);
+            
+            var image = new Image<Argb32>(bitmap.Width, bitmap.Height);
+            for (int y = 0; y < bitmap.Height; ++y)
+            {
+                for (int x = 0; x < bitmap.Width; ++x)
+                {
+                    byte b = rgbValues[y * bitmapData.Stride + x * 4];
+                    byte g = rgbValues[y * bitmapData.Stride + x * 4 + 1];
+                    byte r = rgbValues[y * bitmapData.Stride + x * 4 + 2];
+                    byte a = rgbValues[y * bitmapData.Stride + x * 4 + 3];
+                    image[x, y] = new Argb32(r, g, b, a);
+                }
+            }
+            return image;
+        }
+
         public static void AltTab()
         {
             Press(VirtualKeyShort.MENU);
@@ -290,9 +354,145 @@ namespace OS
             uint nInputs,
             [MarshalAs(UnmanagedType.LPArray), In] INPUT[] pInputs,
             int cbSize);
+        
+        [StructLayout(LayoutKind.Sequential)]
+        public struct BITMAP
+        {
+            internal int bmType;
+            internal int bmWidth;
+            internal int bmHeight;
+            internal int bmWidthBytes;
+            internal int bmPlanes;
+            internal int bmBitsPixel;
+            internal IntPtr bmBits;
+        }
+        
+        public enum BitmapCompressionMode : uint
+        {
+            /// <summary>An uncompressed format.</summary>
+            BI_RGB = 0,
 
+            /// <summary>
+            /// A run-length encoded (RLE) format for bitmaps with 8 bpp. The compression format is a 2-byte format consisting of a count byte followed by a byte
+            /// containing a color index.
+            /// </summary>
+            BI_RLE8 = 1,
 
-        // Declare the INPUT struct
+            /// <summary>
+            /// An RLE format for bitmaps with 4 bpp. The compression format is a 2-byte format consisting of a count byte followed by two word-length color indexes.
+            /// </summary>
+            BI_RLE4 = 2,
+
+            /// <summary>
+            /// Specifies that the bitmap is not compressed and that the color table consists of three DWORD color masks that specify the red, green, and blue
+            /// components, respectively, of each pixel. This is valid when used with 16- and 32-bpp bitmaps.
+            /// </summary>
+            BI_BITFIELDS = 3,
+
+            /// <summary>Indicates that the image is a JPEG image.</summary>
+            BI_JPEG = 4,
+
+            /// <summary>Indicates that the image is a PNG image.</summary>
+            BI_PNG = 5
+        }
+        
+        public enum DIBColorMode : int
+        {
+            /// <summary>The BITMAPINFO structure contains an array of literal RGB values.</summary>
+            DIB_RGB_COLORS = 0,
+
+            /// <summary>
+            /// The bmiColors member of the BITMAPINFO structure is an array of 16-bit indexes into the logical palette of the device context specified by hdc.
+            /// </summary>
+            DIB_PAL_COLORS = 1
+        }
+        
+        [StructLayout(LayoutKind.Sequential)]
+        public struct BITMAPINFOHEADER
+        {
+            public uint biSize;
+            public int biWidth;
+            public int biHeight;
+            public ushort biPlanes;
+            public ushort biBitCount;
+            public BitmapCompressionMode biCompression;
+            public uint biSizeImage;
+            public int biXPelsPerMeter;
+            public int biYPelsPerMeter;
+            public uint biClrUsed;
+            public uint biClrImportant;
+        }
+        
+        [StructLayout(LayoutKind.Sequential)]
+        public struct BITMAPINFO
+        {
+            /// <summary>A BITMAPINFOHEADER structure that contains information about the dimensions of color format.</summary>
+            public BITMAPINFOHEADER bmiHeader;
+
+            /// <summary>
+            /// The bmiColors member contains one of the following:
+            /// <list type="bullet">
+            /// <item>
+            /// <description>An array of RGBQUAD. The elements of the array that make up the color table.</description>
+            /// </item>
+            /// <item>
+            /// <description>
+            /// An array of 16-bit unsigned integers that specifies indexes into the currently realized logical palette. This use of bmiColors is allowed for
+            /// functions that use DIBs. When bmiColors elements contain indexes to a realized logical palette, they must also call the following bitmap
+            /// functions: CreateDIBitmap, CreateDIBPatternBrush, CreateDIBSection (The iUsage parameter of CreateDIBSection must be set to DIB_PAL_COLORS.)
+            /// </description>
+            /// </item>
+            /// </list>
+            /// <para>The number of entries in the array depends on the values of the biBitCount and biClrUsed members of the BITMAPINFOHEADER structure.</para>
+            /// <para>The colors in the bmiColors table appear in order of importance. For more information, see the Remarks section.</para>
+            /// </summary>
+//			[MarshalAs(UnmanagedType.ByValArray, SizeConst = 1, ArraySubType = UnmanagedType.Struct)]
+//			public RGBQUAD[] bmiColors;
+            public IntPtr bmiColors;
+
+            /// <summary>Initializes a new instance of the <see cref="BITMAPINFO"/> structure.</summary>
+            /// <param name="width">The width.</param>
+            /// <param name="height">The height.</param>
+            /// <param name="bitCount">The bit count.</param>
+            public BITMAPINFO(int width, int height, ushort bitCount = 32)
+                : this()
+            {
+                bmiHeader.biSize = (uint) Marshal.SizeOf(typeof(BITMAPINFOHEADER));
+                bmiHeader.biWidth = width;
+                bmiHeader.biHeight = height;
+                bmiHeader.biPlanes = 1;
+                bmiHeader.biBitCount = bitCount;
+                bmiHeader.biCompression = BitmapCompressionMode.BI_RGB;
+                bmiHeader.biSizeImage = 0; // (uint)width * (uint)height * bitCount / 8;
+            }
+        }
+        
+        [StructLayout(LayoutKind.Sequential)]
+        public struct RGBQUAD
+        {
+            /// <summary>The intensity of blue in the color.</summary>
+            public byte rgbBlue;
+
+            /// <summary>The intensity of green in the color.</summary>
+            public byte rgbGreen;
+
+            /// <summary>The intensity of red in the color.</summary>
+            public byte rgbRed;
+
+            /// <summary>This member is reserved and must be zero.</summary>
+            public byte rgbReserved;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct ICONINFO
+        {
+            internal bool icon;  // false if cursor
+            internal uint xHotspot;
+            internal uint yHotspot;
+            internal IntPtr maskBitmap;
+            internal IntPtr colorBitmap;
+        }
+
         [StructLayout(LayoutKind.Sequential)]
         public struct INPUT
         {
@@ -304,7 +504,6 @@ namespace OS
             }
         }
 
-        // Declare the InputUnion struct
         [StructLayout(LayoutKind.Explicit)]
         internal struct InputUnion
         {
@@ -1272,19 +1471,19 @@ namespace OS
 
         public static void Mute()
         {
-            IntPtr handle = Windows.GetForegroundWindow();
+            IntPtr handle = GetForegroundWindow();
             SendMessageW(handle, WM_APPCOMMAND, handle, (IntPtr)APPCOMMAND_VOLUME_MUTE);
         }
 
         public static void VolDown()
         {
-            IntPtr handle = Windows.GetForegroundWindow();
+            IntPtr handle = GetForegroundWindow();
             SendMessageW(handle, WM_APPCOMMAND, handle, (IntPtr)APPCOMMAND_VOLUME_DOWN);
         }
 
         public static void VolUp()
         {
-            IntPtr handle = Windows.GetForegroundWindow();
+            IntPtr handle = GetForegroundWindow();
             SendMessageW(handle, WM_APPCOMMAND, handle, (IntPtr)APPCOMMAND_VOLUME_UP);
         }
     }
