@@ -15,8 +15,11 @@ namespace OS
         [DllImport("user32.dll")]
         public static extern bool SetForegroundWindow(IntPtr hWnd);
         
+        [DllImport("user32.dll", EntryPoint = "CloseWindow")]
+        static extern bool CloseWindowNative(IntPtr hWnd);  // minimize the window
+        
         [DllImport("user32.dll")]
-        public static extern bool CloseWindow(IntPtr hWnd);  // minimize the window
+        static extern bool DestroyWindow(IntPtr hWnd);
         
         [DllImport("user32.dll")]
         public static extern IntPtr GetForegroundWindow();

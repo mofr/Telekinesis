@@ -38,10 +38,11 @@ namespace TelekinesisWebAPI.Controllers
                     }, Request.Scheme);
                     var dto = new WindowDTO
                     {
-                        Id = process.Id,
-                        ProcessName = process.ProcessName,
+                        Id = process.Id.ToString(),
                         Title = process.MainWindowTitle,
                         IconLink = iconLink,
+                        ProcessId = process.Id.ToString(),
+                        ProcessName = process.ProcessName,
                     };
                     windows.Add(dto);
                 }
@@ -49,13 +50,6 @@ namespace TelekinesisWebAPI.Controllers
             return windows;
         }
 
-        [HttpPost("{id}/activate")]
-        public void ActivateWindow(int id)
-        {
-            var process = Process.GetProcessById(id);
-            Windows.ActivateWindow(process.MainWindowHandle);
-        }
-        
         [HttpGet("{id}/icon", Name="get-window-icon")]
         public async Task<IActionResult> GetWindowIcon(int id)
         {
@@ -67,6 +61,20 @@ namespace TelekinesisWebAPI.Controllers
             }
             stream.Seek(0, SeekOrigin.Begin);
             return File(stream, "image/png");
+        }
+
+        [HttpPost("{id}/activate")]
+        public void ActivateWindow(int id)
+        {
+            var process = Process.GetProcessById(id);
+            Windows.ActivateWindow(process.MainWindowHandle);
+        }
+
+        [HttpPost("{id}/close")]
+        public void CloseWindow(int id)
+        {
+            var process = Process.GetProcessById(id);
+            process.CloseMainWindow();
         }
     }
 }
