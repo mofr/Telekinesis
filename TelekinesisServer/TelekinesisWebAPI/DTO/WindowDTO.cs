@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace TelekinesisWebAPI.DTO
@@ -11,7 +12,7 @@ namespace TelekinesisWebAPI.DTO
         public string Title;
 
         [Required]
-        public string IconLink;
+        public Uri IconLink;
 
         [Required]
         public string ProcessId;

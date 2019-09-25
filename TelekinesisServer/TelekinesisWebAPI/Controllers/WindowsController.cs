@@ -40,7 +40,7 @@ namespace TelekinesisWebAPI.Controllers
                     {
                         Id = process.Id.ToString(),
                         Title = process.MainWindowTitle,
-                        IconLink = iconLink,
+                        IconLink = new Uri(iconLink),
                         ProcessId = process.Id.ToString(),
                         ProcessName = process.ProcessName,
                     };
