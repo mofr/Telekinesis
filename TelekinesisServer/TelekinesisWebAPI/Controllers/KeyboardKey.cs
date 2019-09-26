@@ -4,7 +4,7 @@ using Newtonsoft.Json.Converters;
 namespace TelekinesisWebAPI.Controllers
 {
     [JsonConverter(typeof(StringEnumConverter))] 
-    public enum KeyboardButton
+    public enum KeyboardKey
     {
         AltTab,
         VolumeMute,
