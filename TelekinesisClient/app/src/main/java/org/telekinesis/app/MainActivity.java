@@ -25,7 +25,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void setupViewPager(ViewPager viewPager) {
         ViewPagerAdapter adapter = new ViewPagerAdapter(getSupportFragmentManager());
-        adapter.addFrag(new WindowsFragment(), "Control");
+        adapter.addFrag(new ControlFragment(), "Control");
         adapter.addFrag(new WindowsFragment(), "Windows");
         adapter.addFrag(new SystemFragment(), "System");
         viewPager.setAdapter(adapter);
