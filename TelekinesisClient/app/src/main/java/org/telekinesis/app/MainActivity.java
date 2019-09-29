@@ -1,71 +1,41 @@
 package org.telekinesis.app;
 
 import android.os.Bundle;
-import android.util.Log;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.viewpager.widget.ViewPager;
 
-import com.squareup.picasso.Picasso;
+import com.google.android.material.tabs.TabLayout;
 
-import org.telekinesis.client.TelekinesisService;
-import org.telekinesis.client.Window;
-import org.telekinesis.retrofit.EnumRetrofitConverterFactory;
 import org.telekinesis.telekinesis.R;
 
-import java.util.List;
-
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
-
-public class MainActivity extends AppCompatActivity implements TelekinesisDiscovery.Listener {
+public class MainActivity extends AppCompatActivity {
     private static String TAG = "MainActivity";
-
-    TelekinesisDiscovery telekinesisDiscovery;
-    Retrofit retrofit;
-    TelekinesisService telekinesisService;
-
-    TextView textView;
-    ImageView imageView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        textView = findViewById(R.id.textView);
-        imageView = findViewById(R.id.imageView);
-        telekinesisDiscovery = new TelekinesisDiscovery(getApplicationContext(), this);
-        telekinesisDiscovery.discoverServices();
+        TabLayout tabs = findViewById(R.id.tabs);
+        ViewPager viewPager = findViewById(R.id.viewPager);
+        setupViewPager(viewPager);
+        tabs.setupWithViewPager(viewPager);
+        setupTabIcons(tabs);
     }
 
-    @Override
-    public void onServiceFound(TelekinesisServiceInfo serviceInfo) {
-        retrofit = new Retrofit.Builder()
-                .baseUrl(serviceInfo.getURL())
-                .addConverterFactory(GsonConverterFactory.create())
-                .addConverterFactory(new EnumRetrofitConverterFactory())
-                .build();
+    private void setupViewPager(ViewPager viewPager) {
+        ViewPagerAdapter adapter = new ViewPagerAdapter(getSupportFragmentManager());
+        adapter.addFrag(new WindowsFragment(), "Control");
+        adapter.addFrag(new WindowsFragment(), "Windows");
+        adapter.addFrag(new WindowsFragment(), "System");
+        viewPager.setAdapter(adapter);
+    }
 
-        telekinesisService = retrofit.create(TelekinesisService.class);
-        telekinesisService.getAllWindows().enqueue(new Callback<List<Window>>() {
-            @Override
-            public void onResponse(Call<List<Window>> call, Response<List<Window>> response) {
-                String text = "";
-                for (Window window : response.body()) {
-                    Picasso.get().load(window.iconLink).into(imageView);
-                    text += window.title + "\n";
-                }
-                textView.setText(text);
-            }
-
-            @Override
-            public void onFailure(Call<List<Window>> call, Throwable throwable) {
-                Log.w(TAG, "getAllWindows call failed ", throwable);
-            }
-        });
+    private void setupTabIcons(TabLayout tabs) {
+        tabs.getTabAt(0).setIcon(R.drawable.ic_keyboard_24px);
+        tabs.getTabAt(1).setIcon(R.drawable.ic_apps_24px);
+        tabs.getTabAt(2).setIcon(R.drawable.ic_power_settings_new_24px);
     }
 }
