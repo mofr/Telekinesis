@@ -1,3 +1,6 @@
 <resources>
-    <string name="app_name">My Application 1</string>
+    <string name="app_name">Telekinesis</string>
+    <string name="tab_control_label">Control</string>
+    <string name="tab_windows_label">Windows</string>
+    <string name="tab_system_label">System</string>
 </resources>
