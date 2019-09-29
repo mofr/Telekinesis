@@ -18,11 +18,12 @@ import org.telekinesis.telekinesis.R;
 import java.util.ArrayList;
 import java.util.List;
 
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class WindowsFragment extends Fragment {
+public class WindowsFragment extends Fragment implements WindowsAdapter.ClickListener {
     private static String TAG = "WindowsFragment";
 
     private RecyclerView recyclerView;
@@ -37,7 +38,7 @@ public class WindowsFragment extends Fragment {
         recyclerView = root.findViewById(R.id.recyclerView);
         RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(getActivity());
         recyclerView.setLayoutManager(layoutManager);
-        adapter = new WindowsAdapter(new ArrayList<Window>());
+        adapter = new WindowsAdapter(new ArrayList<Window>(), this);
         recyclerView.setAdapter(adapter);
         return root;
     }
@@ -53,6 +54,21 @@ public class WindowsFragment extends Fragment {
             @Override
             public void onFailure(Call<List<Window>> call, Throwable throwable) {
                 Log.w(TAG, "getAllWindows call failed ", throwable);
+            }
+        });
+    }
+
+    @Override
+    public void onClick(Window window) {
+        TelekinesisApplication.service.activateWindow(window.id).enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+
+            }
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                Log.w(TAG, "Failed to active window", t);
             }
         });
     }

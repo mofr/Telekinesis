@@ -1,5 +1,6 @@
 package org.telekinesis.app;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,7 +17,14 @@ import org.telekinesis.telekinesis.R;
 import java.util.List;
 
 public class WindowsAdapter extends RecyclerView.Adapter<WindowsAdapter.MyViewHolder> {
+    private static String TAG = "WindowsAdapter";
+
+    public interface ClickListener {
+        void onClick(Window window);
+    }
+
     private List<Window> windows;
+    private ClickListener clickListener;
 
     // Provide a reference to the views for each data item
     // Complex data items may need more than one view per item, and
@@ -33,8 +41,9 @@ public class WindowsAdapter extends RecyclerView.Adapter<WindowsAdapter.MyViewHo
         }
     }
 
-    public WindowsAdapter(List<Window> windows) {
+    public WindowsAdapter(List<Window> windows, ClickListener clickListener) {
         this.windows = windows;
+        this.clickListener = clickListener;
     }
 
     @Override
@@ -47,9 +56,15 @@ public class WindowsAdapter extends RecyclerView.Adapter<WindowsAdapter.MyViewHo
 
     @Override
     public void onBindViewHolder(MyViewHolder holder, int position) {
-        Window window = windows.get(position);
+        final Window window = windows.get(position);
         holder.textView.setText(window.title);
         Picasso.get().load(window.iconLink).into(holder.imageView);
+        holder.itemView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                clickListener.onClick(window);
+            }
+        });
     }
 
     @Override
