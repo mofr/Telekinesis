@@ -1,8 +1,6 @@
 package org.telekinesis.app;
 
 import android.os.Bundle;
-import android.widget.ImageView;
-import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.viewpager.widget.ViewPager;
@@ -29,7 +27,7 @@ public class MainActivity extends AppCompatActivity {
         ViewPagerAdapter adapter = new ViewPagerAdapter(getSupportFragmentManager());
         adapter.addFrag(new WindowsFragment(), "Control");
         adapter.addFrag(new WindowsFragment(), "Windows");
-        adapter.addFrag(new WindowsFragment(), "System");
+        adapter.addFrag(new SystemFragment(), "System");
         viewPager.setAdapter(adapter);
     }
 

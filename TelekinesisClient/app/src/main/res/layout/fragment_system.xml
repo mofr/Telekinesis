@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:paddingHorizontal="16dp"
+    android:paddingTop="48dp"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <Button
+        android:id="@+id/buttonShutdown"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        style="@style/Widget.AppCompat.Button.Colored"
+        android:text="Shutdown" />
+
+    <Button
+        android:id="@+id/buttonRestart"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        style="@style/Widget.AppCompat.Button.Colored"
+        android:text="Restart" />
+
+    <Button
+        android:id="@+id/buttonAbortShutdown"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Abort shutdown" />
+
+    <Button
+        android:id="@+id/buttonLockScreen"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Lock screen" />
+
+</LinearLayout>
