@@ -5,18 +5,17 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-
-import com.squareup.picasso.Picasso;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import org.telekinesis.client.Window;
 import org.telekinesis.telekinesis.R;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import retrofit2.Call;
@@ -26,8 +25,8 @@ import retrofit2.Response;
 public class WindowsFragment extends Fragment {
     private static String TAG = "WindowsFragment";
 
-    TextView textView;
-    ImageView imageView;
+    private RecyclerView recyclerView;
+    private WindowsAdapter adapter;
 
     @Nullable
     @Override
@@ -35,8 +34,11 @@ public class WindowsFragment extends Fragment {
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_windows, container, false);
-        textView = root.findViewById(R.id.textView);
-        imageView = root.findViewById(R.id.imageView);
+        recyclerView = root.findViewById(R.id.recyclerView);
+        RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(getActivity());
+        recyclerView.setLayoutManager(layoutManager);
+        adapter = new WindowsAdapter(new ArrayList<Window>());
+        recyclerView.setAdapter(adapter);
         return root;
     }
 
@@ -45,13 +47,7 @@ public class WindowsFragment extends Fragment {
         TelekinesisApplication.service.getAllWindows().enqueue(new Callback<List<Window>>() {
             @Override
             public void onResponse(Call<List<Window>> call, Response<List<Window>> response) {
-                String text = "";
-                for (Window window : response.body()) {
-                    Log.d(TAG, window.title);
-                    Picasso.get().load(window.iconLink).into(imageView);
-                    text += window.title + "\n";
-                }
-                textView.setText(text);
+                adapter.setWindows(response.body());
             }
 
             @Override
